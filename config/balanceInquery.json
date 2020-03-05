@@ -4,11 +4,11 @@
     {
       "ip": "localhost",
       "port": "8080",
-      "basePath": "/ks/km-switch",
+      "basePath": "/VolarisRWS",
       "hostname": "PrepaidReplenishment",
-      "path": "/prepaidReplenishment",
-      "transactionsPerSecond": 8,
-      "stressingSeconds": 3,
+      "path": "/consultarMonedero/getConsultaMonedero/",
+      "transactionsPerSecond": 1,
+      "stressingSeconds": 1,
       "transactions": [
         {
           "amount": 0,

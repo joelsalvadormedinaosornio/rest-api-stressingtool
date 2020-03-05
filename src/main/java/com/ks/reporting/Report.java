@@ -1,10 +1,8 @@
 package com.ks.reporting;
 
 import com.ks.client.model.TransactionRequest;
-import com.ks.lib.Configuracion;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -28,7 +26,7 @@ public class Report
         try
         {
             SimpleDateFormat dateFormat = new SimpleDateFormat("ddMMyyyyHHmm");
-            writer = new BufferedWriter(new FileWriter(Configuracion.getRutaConfiguracion() + "/output/" + "Report" + dateFormat.format(new Date()) + ".csv", true));
+            writer = new BufferedWriter(new FileWriter("./config/output/" + "Report" + dateFormat.format(new Date()) + ".csv", true));
             writer.write("trxID,response,time,error\n");
         }
         catch (Exception e)

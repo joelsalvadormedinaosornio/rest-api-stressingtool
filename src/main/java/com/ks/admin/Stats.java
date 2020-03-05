@@ -1,6 +1,5 @@
 package com.ks.admin;
 
-import com.ks.lib.Configuracion;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -73,7 +72,7 @@ public class Stats
     public static void printResult() throws IOException
     {
         System.out.println(getData());
-        File output = new File(Configuracion.getRuta() + "/out/output.txt");
+        File output = new File("./config/out/output.txt");
 
         if (!output.exists())
         {

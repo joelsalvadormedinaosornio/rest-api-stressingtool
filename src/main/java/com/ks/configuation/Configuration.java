@@ -1,7 +1,6 @@
 package com.ks.configuation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ks.lib.Configuracion;
 
 import java.io.File;
 
@@ -13,7 +12,7 @@ public class Configuration
         try
         {
             final ObjectMapper mapper = new ObjectMapper();
-            mapper.readValue(new File(Configuracion.getRutaConfiguracion() + "/" + fileName + ".json"), ConfigurationData.class);
+            mapper.readValue(new File("./config/" + fileName + ".json"), ConfigurationData.class);
         }
         catch (Exception e)
         {
