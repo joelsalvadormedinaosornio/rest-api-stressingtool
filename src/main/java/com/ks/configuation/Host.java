@@ -1,6 +1,5 @@
 package com.ks.configuation;
 
-import com.ks.client.model.TransactionRequest;
 
 import java.util.List;
 
@@ -14,7 +13,7 @@ public class Host
     private String path;
     private int transactionsPerSecond;
     private int stressingSeconds;
-    private List<TransactionRequest> transactions;
+    private List<String> transactions;
 
     public String getIp() {
         return ip;
@@ -70,12 +69,12 @@ public class Host
         this.transactionsPerSecond = transactionsPerSecond;
     }
 
-    public List<TransactionRequest> getTransactions()
+    public List<String> getTransactions()
     {
         return transactions;
     }
 
-    public void setTransactions(List<TransactionRequest> transactions)
+    public void setTransactions(List<String> transactions)
     {
         this.transactions = transactions;
     }

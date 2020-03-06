@@ -1,112 +1,74 @@
 package com.ks;
 
-import com.google.gson.internal.LinkedTreeMap;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ks.admin.Stats;
-import com.ks.client.ApiClient;
-import com.ks.client.ApiException;
-import com.ks.client.api.TransactionsApi;
-import com.ks.client.model.TransactionRequest;
-import com.ks.configuation.Configuration;
 import com.ks.configuation.ConfigurationData;
 import com.ks.configuation.Host;
 import com.ks.reporting.Report;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
+import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
-import java.util.Scanner;
 
-/**
- * Hello world!
- */
-public class App
-{
+public class App {
     private static final SimpleDateFormat sd = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private static ConfigurationData configurationData = new ConfigurationData();
-    private final Scanner scanner = new Scanner(System.in);
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static ConfigurationData configurationData;
     private int cont = 0;
 
-    public static void main(String[] args) throws InterruptedException, IOException
-    {
-        Configuration.readConfig(args[0]);
-        configurationData = ConfigurationData.getInstance();
-        Stats.started();
-        new App().start();
+    public static void main(String[] args) {
+        try {
+            configurationData = mapper.readValue(new File("./config/" + args[0] + ".json"), ConfigurationData.class);
+            Stats.started();
+            new App().start();
+        } catch (Exception e) {
+            System.out.println("Error durante la ejecucion: " + e.getMessage() + " localizado en: " + Arrays.toString(e.getStackTrace()));
+            System.exit(-1);
+        }
     }
 
-    private void start() throws InterruptedException, IOException
-    {
-        for (Host host : configurationData.getHosts())
-        {
-            for (TransactionRequest transactionRequest : host.getTransactions())
-            {
-                for (int second = 0; second < host.getStressingSeconds(); second++)
-                {
-                    for (int tranNumber = 1; tranNumber <= host.getTransactionsPerSecond(); tranNumber++)
-                    {
-                        System.out.println("Sending transaction to " + host.getHostname() + " numero :" + tranNumber);
-                        new Thread(() -> this.send(transactionRequest, host.getPath(), host)).start();
+    private void start() throws InterruptedException {
+        for (Host host : configurationData.getHosts()) {
+            for (String transactionRequest : host.getTransactions()) {
+                for (int second = 0; second < host.getStressingSeconds(); second++) {
+                    for (int tranNumber = 1; tranNumber <= host.getTransactionsPerSecond(); tranNumber++) {
+                        new Thread(() -> this.send(transactionRequest, host)).start();
                         Thread.sleep(10);
                     }
                     Thread.sleep(1000);
                 }
             }
+
             Thread.sleep(3000);
-            while (Stats.missingTrans())
-            {
-                if (scanner.nextLine().equalsIgnoreCase("yes"))
-                {
-                    break;
-                }
-                Thread.sleep(3000);
-            }
         }
+
         Report.getInstance().close();
         Stats.finished();
-        Stats.printResult();
+        System.out.println(Stats.getData());
     }
 
-    private void send(TransactionRequest request, String hostPath, Host host)
-    {
-        try
-        {
-            final ApiClient apiClient;
-            final TransactionsApi transactionsApi;
+    private void send(String request, Host host) {
+        String trxId = String.format("%012d", new Random().nextInt(Integer.MAX_VALUE));
+        String url = "http://" + host.getIp() + ":" + host.getPort() + host.getBasePath() + host.getPath() + request;
 
-            apiClient = new ApiClient();
-            apiClient.setBasePath("http://" + host.getIp() + ":" + host.getPort() + host.getBasePath());
-
-            transactionsApi = new TransactionsApi(apiClient);
+        try {
+            RestTemplate restTemplate = new RestTemplate();
             Stats.newRequest();
             cont++;
-            request.setTransactionTimeout(String.valueOf(System.currentTimeMillis() + 28000));
-            request.setTransactionId(String.format("%012d", new Random().nextInt(Integer.MAX_VALUE)));
-            System.out.println("Request:\t" + cont + " " + request.getTransactionId() + " - " + sd.format(new Date()));
-            LinkedTreeMap response = (LinkedTreeMap) transactionsApi.genericPost(request, hostPath);
+            System.out.println("Request:\t" + cont + " " + trxId + " - " + sd.format(new Date()));
+            ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
             Stats.newResponse();
-            System.out.println("Response:\t" + request.getTransactionId() + " - " + sd.format(new Date()) + response.toString());
-            Report.getInstance().save(request, response.toString(), false);
-        }
-        catch (ApiException e)
-        {
-            if (e.getResponseBody() != null && e.getResponseBody().contains("Transaccion duplicada"))
-            {
-                Stats.newDuplicated();
-            }
-            else
-            {
-                Stats.newError();
-            }
-            System.out.println("Error transaction id: " + request.getTransactionId() + "Error: " + e.toString() + e.getResponseBody() + e.toString());
-            Report.getInstance().save(request, e.getResponseBody(), true);
-        }
-        catch (Exception e)
-        {
+            System.out.println("Response:\t" + trxId + " - " + sd.format(new Date()) + responseEntity.getBody());
+            Report.getInstance().save(trxId, request, responseEntity.getBody(), false);
+        } catch (Exception e) {
             Stats.newError();
-            System.out.println("Generic error transaction id: " + request.getTransactionId() + "Error: " + e.toString() + e.getMessage());
-            Report.getInstance().save(request, e.toString(), true);
+            System.out.println("Generic error transaction id: " + trxId + "Error: " + e.toString() + e.getMessage());
+            Report.getInstance().save(trxId, request, e.toString(), true);
         }
     }
 }
